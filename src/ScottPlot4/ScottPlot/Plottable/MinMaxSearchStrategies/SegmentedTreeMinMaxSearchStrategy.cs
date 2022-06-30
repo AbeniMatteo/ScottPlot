@@ -1,9 +1,11 @@
 ﻿using ScottPlot.DataStructures;
 using System;
+using System.Numerics;
 
 namespace ScottPlot.MinMaxSearchStrategies
 {
-    public class SegmentedTreeMinMaxSearchStrategy<T> : IMinMaxSearchStrategy<T> where T : struct, IComparable
+    public class SegmentedTreeMinMaxSearchStrategy<T> : IMinMaxSearchStrategy<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         private SegmentedTree<T> segmentedTree;
 

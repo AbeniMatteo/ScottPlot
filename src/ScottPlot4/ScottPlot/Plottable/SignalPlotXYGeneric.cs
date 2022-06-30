@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Linq.Expressions;
+using System.Numerics;
 
 namespace ScottPlot.Plottable
 {
@@ -12,9 +12,10 @@ namespace ScottPlot.Plottable
     /// </summary>
     /// <typeparam name="TX"></typeparam>
     /// <typeparam name="TY"></typeparam>
-    public class SignalPlotXYGeneric<TX, TY> : SignalPlotBase<TY>,
-        IHasPointsGenericX<TX, TY> where TX : struct,
-        IComparable where TY : struct, IComparable
+    public class SignalPlotXYGeneric<TX, TY>
+        : SignalPlotBase<TY>, IHasPointsGenericX<TX, TY>
+        where TX : INumber<TX>, IMinMaxValue<TX>
+        where TY : INumber<TY>, IMinMaxValue<TY>
     {
         /// <summary>
         /// Indicates whether Xs have been validated to ensure all values are ascending.
@@ -52,7 +53,6 @@ namespace ScottPlot.Plottable
 
         public SignalPlotXYGeneric() : base()
         {
-            InitExp();
         }
 
         public override AxisLimits GetAxisLimits()
@@ -323,25 +323,12 @@ namespace ScottPlot.Plottable
             if (index > MaxRenderIndex) // x higher then MaxRenderIndex
                 return GetPointByIndex(MaxRenderIndex);
 
-            TX distLeft = SubstractExp(x, Xs[index - 1]);
-            TX distRight = SubstractExp(Xs[index], x);
-            if (LessThanOrEqualExp(distLeft, distRight)) // x closer to XS[index -1]
+            TX distLeft = x - Xs[index - 1];
+            TX distRight = Xs[index] - x;
+            if (distLeft <= distRight) // x closer to XS[index -1]
                 return GetPointByIndex(index - 1);
             else // x closer to XS[index]
                 return GetPointByIndex(index);
-        }
-
-        private static Func<TX, TX, TX> SubstractExp;
-        private static Func<TX, TX, bool> LessThanOrEqualExp;
-
-        private void InitExp()
-        {
-            ParameterExpression paramA = Expression.Parameter(typeof(TX), "a");
-            ParameterExpression paramB = Expression.Parameter(typeof(TX), "b");
-            BinaryExpression bodySubstract = Expression.Subtract(paramA, paramB);
-            BinaryExpression bodyLessOrEqual = Expression.LessThanOrEqual(paramA, paramB);
-            SubstractExp = Expression.Lambda<Func<TX, TX, TX>>(bodySubstract, paramA, paramB).Compile();
-            LessThanOrEqualExp = Expression.Lambda<Func<TX, TX, bool>>(bodyLessOrEqual, paramA, paramB).Compile();
         }
     }
 }

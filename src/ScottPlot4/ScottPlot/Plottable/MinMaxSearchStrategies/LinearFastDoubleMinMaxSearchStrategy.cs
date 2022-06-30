@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Numerics;
 
 namespace ScottPlot.MinMaxSearchStrategies
 {
-    public class LinearFastDoubleMinMaxSearchStrategy<T> : LinearMinMaxSearchStrategy<T> where T : struct, IComparable
+    public class LinearFastDoubleMinMaxSearchStrategy<T> : LinearMinMaxSearchStrategy<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         private double[] sourceArrayDouble;
 

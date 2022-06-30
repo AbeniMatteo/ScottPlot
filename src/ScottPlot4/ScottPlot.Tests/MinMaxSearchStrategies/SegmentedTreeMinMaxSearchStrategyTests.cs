@@ -1,13 +1,15 @@
 ﻿using NUnit.Framework;
 using ScottPlot.MinMaxSearchStrategies;
 using System;
+using System.Numerics;
 
 namespace ScottPlotTests.MinMaxSearchStrategies
 {
     [TestFixture]
     public class SegmentedTreeMinMaxSearchStrategyTests
     {
-        public virtual IMinMaxSearchStrategy<T> CreateStrategy<T>() where T : struct, IComparable
+        public virtual IMinMaxSearchStrategy<T> CreateStrategy<T>()
+            where T : INumber<T>, IMinMaxValue<T>
         {
             return new SegmentedTreeMinMaxSearchStrategy<T>();
         }

@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Linq.Expressions;
+using System.Numerics;
 
 namespace ScottPlot.MinMaxSearchStrategies
 {
-    public class LinearMinMaxSearchStrategy<T> : IMinMaxSearchStrategy<T> where T : struct, IComparable
+    public class LinearMinMaxSearchStrategy<T> : IMinMaxSearchStrategy<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         private T[] sourceArray;
         public virtual T[] SourceArray
@@ -12,24 +13,8 @@ namespace ScottPlot.MinMaxSearchStrategies
             set => sourceArray = value;
         }
 
-        // precompiled lambda expressions for fast math on generic
-        private static Func<T, T, bool> LessThanExp;
-        private static Func<T, T, bool> GreaterThanExp;
-        private void InitExp()
-        {
-            ParameterExpression paramA = Expression.Parameter(typeof(T), "a");
-            ParameterExpression paramB = Expression.Parameter(typeof(T), "b");
-            // add the parameters together
-            BinaryExpression bodyLessThan = Expression.LessThan(paramA, paramB);
-            BinaryExpression bodyGreaterThan = Expression.GreaterThan(paramA, paramB);
-            // compile it
-            LessThanExp = Expression.Lambda<Func<T, T, bool>>(bodyLessThan, paramA, paramB).Compile();
-            GreaterThanExp = Expression.Lambda<Func<T, T, bool>>(bodyGreaterThan, paramA, paramB).Compile();
-        }
-
         public LinearMinMaxSearchStrategy()
         {
-            InitExp();
         }
 
         public virtual void MinMaxRangeQuery(int l, int r, out double lowestValue, out double highestValue)
@@ -38,9 +23,9 @@ namespace ScottPlot.MinMaxSearchStrategies
             T highestValueT = sourceArray[l];
             for (int i = l; i <= r; i++)
             {
-                if (LessThanExp(sourceArray[i], lowestValueT))
+                if (sourceArray[i] < lowestValueT)
                     lowestValueT = sourceArray[i];
-                if (GreaterThanExp(sourceArray[i], highestValueT))
+                if (sourceArray[i] > highestValueT)
                     highestValueT = sourceArray[i];
             }
             lowestValue = Convert.ToDouble(lowestValueT);

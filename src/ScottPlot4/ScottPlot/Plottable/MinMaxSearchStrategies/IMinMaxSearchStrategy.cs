@@ -1,6 +1,9 @@
-﻿namespace ScottPlot.MinMaxSearchStrategies
+﻿using System.Numerics;
+
+namespace ScottPlot.MinMaxSearchStrategies
 {
     public interface IMinMaxSearchStrategy<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         T[] SourceArray { get; set; }
         void MinMaxRangeQuery(int l, int r, out double lowestValue, out double highestValue);

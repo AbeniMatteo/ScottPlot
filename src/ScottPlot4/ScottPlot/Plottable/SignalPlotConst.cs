@@ -1,5 +1,6 @@
 ﻿using ScottPlot.MinMaxSearchStrategies;
 using System;
+using System.Numerics;
 
 namespace ScottPlot.Plottable
 {
@@ -19,7 +20,8 @@ namespace ScottPlot.Plottable
     /// If the underlying data is updated, you must call Update() methods to recalculate the min/max values.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class SignalPlotConst<T> : SignalPlotBase<T> where T : struct, IComparable
+    public class SignalPlotConst<T> : SignalPlotBase<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         public bool TreesReady => (Strategy as SegmentedTreeMinMaxSearchStrategy<T>)?.TreesReady ?? false;
 

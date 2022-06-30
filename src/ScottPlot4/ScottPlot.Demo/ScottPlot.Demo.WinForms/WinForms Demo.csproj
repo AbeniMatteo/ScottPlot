@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net6-windows;net48</TargetFrameworks>
+    <TargetFrameworks>net7.0-windows</TargetFrameworks>
     <UseWindowsForms>true</UseWindowsForms>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>ScottPlot.Demo.WinForms</RootNamespace>
@@ -13,9 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <ProjectReference Include="..\..\ScottPlot\ScottPlot.csproj" />
-	  <ProjectReference Include="..\..\ScottPlot.Cookbook\ScottPlot.Cookbook.csproj" />
-	  <ProjectReference Include="..\..\ScottPlot.WinForms\ScottPlot.WinForms.csproj" />
+    <ProjectReference Include="..\..\ScottPlot\ScottPlot.csproj" />
+    <ProjectReference Include="..\..\ScottPlot.Cookbook\ScottPlot.Cookbook.csproj" />
+    <ProjectReference Include="..\..\ScottPlot.WinForms\ScottPlot.WinForms.csproj" />
   </ItemGroup>
 
   <ItemGroup>

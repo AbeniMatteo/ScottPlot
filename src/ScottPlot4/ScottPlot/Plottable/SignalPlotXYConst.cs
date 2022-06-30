@@ -1,5 +1,6 @@
 ﻿using ScottPlot.MinMaxSearchStrategies;
 using System;
+using System.Numerics;
 
 namespace ScottPlot.Plottable
 {
@@ -8,7 +9,9 @@ namespace ScottPlot.Plottable
     /// </summary>
     /// <typeparam name="TX"></typeparam>
     /// <typeparam name="TY"></typeparam>
-    public class SignalPlotXYConst<TX, TY> : SignalPlotXYGeneric<TX, TY> where TX : struct, IComparable where TY : struct, IComparable
+    public class SignalPlotXYConst<TX, TY> : SignalPlotXYGeneric<TX, TY>
+        where TX : INumber<TX>, IMinMaxValue<TX>
+        where TY : INumber<TY>, IMinMaxValue<TY>
     {
         public bool TreesReady => (Strategy as SegmentedTreeMinMaxSearchStrategy<TY>)?.TreesReady ?? false;
 

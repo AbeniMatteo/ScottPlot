@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 
 namespace ScottPlot
 {
@@ -1139,7 +1140,8 @@ namespace ScottPlot
         /// but data in source arrays cannot be changed after it is loaded.
         /// Methods can be used to update all or portions of the data.
         /// </summary>
-        public SignalPlotConst<T> AddSignalConst<T>(T[] ys, double sampleRate = 1, Color? color = null, string label = null) where T : struct, IComparable
+        public SignalPlotConst<T> AddSignalConst<T>(T[] ys, double sampleRate = 1, Color? color = null, string label = null)
+            where T : INumber<T>, IMinMaxValue<T>
         {
             SignalPlotConst<T> plottable = new SignalPlotConst<T>()
             {
@@ -1178,7 +1180,8 @@ namespace ScottPlot
         /// Faster than SignalXY but values cannot be modified after loading.
         /// </summary>
         public SignalPlotXYConst<TX, TY> AddSignalXYConst<TX, TY>(TX[] xs, TY[] ys, Color? color = null, string label = null)
-            where TX : struct, IComparable where TY : struct, IComparable
+            where TX : INumber<TX>, IMinMaxValue<TX>
+            where TY : INumber<TY>, IMinMaxValue<TY>
         {
             SignalPlotXYConst<TX, TY> signal = new SignalPlotXYConst<TX, TY>()
             {
@@ -1229,7 +1232,7 @@ namespace ScottPlot
         /// Add a 2D vector field to the plot
         /// </summary>
         public VectorField AddVectorField(
-            Vector2[,] vectors,
+            Statistics.Vector2[,] vectors,
             double[] xs,
             double[] ys,
             string label = null,

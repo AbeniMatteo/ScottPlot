@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 
 namespace ScottPlot
 {
@@ -816,7 +817,8 @@ namespace ScottPlot
             int? maxRenderIndex = null,
             LineStyle lineStyle = LineStyle.Solid,
             bool useParallel = true
-            ) where T : struct, IComparable
+        )
+            where T : INumber<T>, IMinMaxValue<T>
         {
             SignalPlotConst<T> signal = new SignalPlotConst<T>()
             {
@@ -883,8 +885,9 @@ namespace ScottPlot
             int? maxRenderIndex = null,
             LineStyle lineStyle = LineStyle.Solid,
             bool useParallel = true
-            ) where TX : struct, IComparable where TY : struct, IComparable
-
+        )
+            where TX : INumber<TX>, IMinMaxValue<TX>
+            where TY : INumber<TY>, IMinMaxValue<TY>
         {
             SignalPlotXYConst<TX, TY> signal = new SignalPlotXYConst<TX, TY>()
             {
@@ -1113,7 +1116,7 @@ namespace ScottPlot
 
         [Obsolete("Create a VectorField manually then call Add()")]
         public VectorField PlotVectorField(
-            Vector2[,] vectors,
+            Statistics.Vector2[,] vectors,
             double[] xs,
             double[] ys,
             string label = null,

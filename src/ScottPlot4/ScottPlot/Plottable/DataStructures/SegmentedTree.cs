@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Linq.Expressions;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace ScottPlot.DataStructures
 {
-    public class SegmentedTree<T> where T : struct, IComparable
+    public class SegmentedTree<T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         private T[] sourceArray;
 
@@ -12,14 +13,6 @@ namespace ScottPlot.DataStructures
         private T[] TreeMax;
         private int n = 0; // size of each Tree
         public bool TreesReady = false;
-        // precompiled lambda expressions for fast math on generic
-        private static Func<T, T, T> MinExp;
-        private static Func<T, T, T> MaxExp;
-        private static Func<T, T, bool> EqualExp;
-        private static Func<T> MaxValue;
-        private static Func<T> MinValue;
-        private static Func<T, T, bool> LessThanExp;
-        private static Func<T, T, bool> GreaterThanExp;
 
         public T[] SourceArray
         {
@@ -37,13 +30,12 @@ namespace ScottPlot.DataStructures
         {
             try // runtime check
             {
-                Convert.ToDouble(new T());
+                Convert.ToDouble(default(T));
             }
             catch
             {
                 throw new ArgumentOutOfRangeException("Unsupported data type, provide convertable to double data types");
             }
-            InitExp();
         }
 
         public SegmentedTree(T[] data)
@@ -57,28 +49,6 @@ namespace ScottPlot.DataStructures
             await Task.Run(() => UpdateTrees());
         }
 
-        private void InitExp()
-        {
-            ParameterExpression paramA = Expression.Parameter(typeof(T), "a");
-            ParameterExpression paramB = Expression.Parameter(typeof(T), "b");
-            // add the parameters together
-            ConditionalExpression bodyMin = Expression.Condition(Expression.LessThanOrEqual(paramA, paramB), paramA, paramB);
-            ConditionalExpression bodyMax = Expression.Condition(Expression.GreaterThanOrEqual(paramA, paramB), paramA, paramB);
-            BinaryExpression bodyEqual = Expression.Equal(paramA, paramB);
-            MemberExpression bodyMaxValue = Expression.MakeMemberAccess(null, typeof(T).GetField("MaxValue"));
-            MemberExpression bodyMinValue = Expression.MakeMemberAccess(null, typeof(T).GetField("MinValue"));
-            BinaryExpression bodyLessThan = Expression.LessThan(paramA, paramB);
-            BinaryExpression bodyGreaterThan = Expression.GreaterThan(paramA, paramB);
-            // compile it
-            MinExp = Expression.Lambda<Func<T, T, T>>(bodyMin, paramA, paramB).Compile();
-            MaxExp = Expression.Lambda<Func<T, T, T>>(bodyMax, paramA, paramB).Compile();
-            EqualExp = Expression.Lambda<Func<T, T, bool>>(bodyEqual, paramA, paramB).Compile();
-            MaxValue = Expression.Lambda<Func<T>>(bodyMaxValue).Compile();
-            MinValue = Expression.Lambda<Func<T>>(bodyMinValue).Compile();
-            LessThanExp = Expression.Lambda<Func<T, T, bool>>(bodyLessThan, paramA, paramB).Compile();
-            GreaterThanExp = Expression.Lambda<Func<T, T, bool>>(bodyGreaterThan, paramA, paramB).Compile();
-        }
-
         public void updateElement(int index, T newValue)
         {
             sourceArray[index] = newValue;
@@ -90,27 +60,27 @@ namespace ScottPlot.DataStructures
             }
             else if (index % 2 == 0) // even elem have right pair
             {
-                TreeMin[n / 2 + index / 2] = MinExp(sourceArray[index], sourceArray[index + 1]);
-                TreeMax[n / 2 + index / 2] = MaxExp(sourceArray[index], sourceArray[index + 1]);
+                TreeMin[n / 2 + index / 2] = T.Min(sourceArray[index], sourceArray[index + 1]);
+                TreeMax[n / 2 + index / 2] = T.Max(sourceArray[index], sourceArray[index + 1]);
             }
             else // odd elem have left pair
             {
-                TreeMin[n / 2 + index / 2] = MinExp(sourceArray[index], sourceArray[index - 1]);
-                TreeMax[n / 2 + index / 2] = MaxExp(sourceArray[index], sourceArray[index - 1]);
+                TreeMin[n / 2 + index / 2] = T.Min(sourceArray[index], sourceArray[index - 1]);
+                TreeMax[n / 2 + index / 2] = T.Max(sourceArray[index], sourceArray[index - 1]);
             }
 
             T candidate;
             for (int i = (n / 2 + index / 2) / 2; i > 0; i /= 2)
             {
-                candidate = MinExp(TreeMin[i * 2], TreeMin[i * 2 + 1]);
-                if (EqualExp(TreeMin[i], candidate)) // if node same then new value don't need to recalc all upper
+                candidate = T.Min(TreeMin[i * 2], TreeMin[i * 2 + 1]);
+                if (TreeMin[i] == candidate) // if node same then new value don't need to recalc all upper
                     break;
                 TreeMin[i] = candidate;
             }
             for (int i = (n / 2 + index / 2) / 2; i > 0; i /= 2)
             {
-                candidate = MaxExp(TreeMax[i * 2], TreeMax[i * 2 + 1]);
-                if (EqualExp(TreeMax[i], candidate)) // if node same then new value don't need to recalc all upper
+                candidate = T.Max(TreeMax[i * 2], TreeMax[i * 2 + 1]);
+                if (TreeMax[i] == candidate) // if node same then new value don't need to recalc all upper
                     break;
                 TreeMax[i] = candidate;
             }
@@ -126,8 +96,8 @@ namespace ScottPlot.DataStructures
 
             for (int i = n / 2 + from / 2; i < n / 2 + to / 2; i++)
             {
-                TreeMin[i] = MinExp(sourceArray[i * 2 - n], sourceArray[i * 2 + 1 - n]);
-                TreeMax[i] = MaxExp(sourceArray[i * 2 - n], sourceArray[i * 2 + 1 - n]);
+                TreeMin[i] = T.Min(sourceArray[i * 2 - n], sourceArray[i * 2 + 1 - n]);
+                TreeMax[i] = T.Max(sourceArray[i * 2 - n], sourceArray[i * 2 + 1 - n]);
             }
             if (to == sourceArray.Length) // last elem haven't pair
             {
@@ -136,8 +106,8 @@ namespace ScottPlot.DataStructures
             }
             else if (to % 2 == 1) //last elem even(to-1) and not last
             {
-                TreeMin[n / 2 + to / 2] = MinExp(sourceArray[to - 1], sourceArray[to]);
-                TreeMax[n / 2 + to / 2] = MaxExp(sourceArray[to - 1], sourceArray[to]);
+                TreeMin[n / 2 + to / 2] = T.Min(sourceArray[to - 1], sourceArray[to]);
+                TreeMax[n / 2 + to / 2] = T.Max(sourceArray[to - 1], sourceArray[to]);
             }
 
             from = (n / 2 + from / 2) / 2;
@@ -150,8 +120,8 @@ namespace ScottPlot.DataStructures
                 {
                     for (int i = from; i <= to; i++) // Recalc all level nodes in range 
                     {
-                        TreeMin[i] = MinExp(TreeMin[i * 2], TreeMin[i * 2 + 1]);
-                        TreeMax[i] = MaxExp(TreeMax[i * 2], TreeMax[i * 2 + 1]);
+                        TreeMin[i] = T.Min(TreeMin[i * 2], TreeMin[i * 2 + 1]);
+                        TreeMax[i] = T.Max(TreeMax[i * 2], TreeMax[i * 2 + 1]);
                     }
                 }
                 else
@@ -159,16 +129,16 @@ namespace ScottPlot.DataStructures
                     // left == rigth, so no need more from to loop
                     for (int i = from; i > 0; i /= 2) // up to root node
                     {
-                        candidate = MinExp(TreeMin[i * 2], TreeMin[i * 2 + 1]);
-                        if (EqualExp(TreeMin[i], candidate)) // if node same then new value don't need to recalc all upper
+                        candidate = T.Min(TreeMin[i * 2], TreeMin[i * 2 + 1]);
+                        if (TreeMin[i] == candidate) // if node same then new value don't need to recalc all upper
                             break;
                         TreeMin[i] = candidate;
                     }
 
                     for (int i = from; i > 0; i /= 2) // up to root node
                     {
-                        candidate = MaxExp(TreeMax[i * 2], TreeMax[i * 2 + 1]);
-                        if (EqualExp(TreeMax[i], candidate)) // if node same then new value don't need to recalc all upper
+                        candidate = T.Max(TreeMax[i * 2], TreeMax[i * 2 + 1]);
+                        if (TreeMax[i] == candidate) // if node same then new value don't need to recalc all upper
                             break;
                         TreeMax[i] = candidate;
                     }
@@ -205,7 +175,7 @@ namespace ScottPlot.DataStructures
                 if (sourceArray.Length == 0)
                     throw new ArgumentOutOfRangeException($"Array cant't be empty");
                 // Size up to pow2
-                if (sourceArray.Length > 0x40_00_00_00) // pow 2 must be more then int.MaxValue
+                if (sourceArray.Length > 0x40_00_00_00) // pow 2 must be more then inMaxValue
                     throw new ArgumentOutOfRangeException($"Array higher than {0x40_00_00_00} not supported by SignalConst");
                 int pow2 = 1;
                 while (pow2 < 0x40_00_00_00 && pow2 < sourceArray.Length)
@@ -213,14 +183,14 @@ namespace ScottPlot.DataStructures
                 n = pow2;
                 TreeMin = new T[n];
                 TreeMax = new T[n];
-                T maxValue = MaxValue();
-                T minValue = MinValue();
+                T maxValue = T.MaxValue;
+                T minValue = T.MinValue;
 
                 // fill bottom layer of tree
                 for (int i = 0; i < sourceArray.Length / 2; i++) // with source array pairs min/max
                 {
-                    TreeMin[n / 2 + i] = MinExp(sourceArray[i * 2], sourceArray[i * 2 + 1]);
-                    TreeMax[n / 2 + i] = MaxExp(sourceArray[i * 2], sourceArray[i * 2 + 1]);
+                    TreeMin[n / 2 + i] = T.Min(sourceArray[i * 2], sourceArray[i * 2 + 1]);
+                    TreeMax[n / 2 + i] = T.Max(sourceArray[i * 2], sourceArray[i * 2 + 1]);
                 }
                 if (sourceArray.Length % 2 == 1) // if array size odd, last element haven't pair to compare
                 {
@@ -235,8 +205,8 @@ namespace ScottPlot.DataStructures
                 // fill other layers
                 for (int i = n / 2 - 1; i > 0; i--)
                 {
-                    TreeMin[i] = MinExp(TreeMin[2 * i], TreeMin[2 * i + 1]);
-                    TreeMax[i] = MaxExp(TreeMax[2 * i], TreeMax[2 * i + 1]);
+                    TreeMin[i] = T.Min(TreeMin[2 * i], TreeMin[2 * i + 1]);
+                    TreeMax[i] = T.Max(TreeMax[2 * i], TreeMax[2 * i + 1]);
                 }
                 TreesReady = true;
             }
@@ -262,9 +232,9 @@ namespace ScottPlot.DataStructures
                 highestValueT = sourceArray[l];
                 for (int i = l; i < r; i++)
                 {
-                    if (LessThanExp(sourceArray[i], lowestValueT))
+                    if (sourceArray[i] < lowestValueT)
                         lowestValueT = sourceArray[i];
-                    if (GreaterThanExp(sourceArray[i], highestValueT))
+                    if (sourceArray[i] > highestValueT)
                         highestValueT = sourceArray[i];
                 }
                 lowestValue = Convert.ToDouble(lowestValueT);
@@ -272,8 +242,8 @@ namespace ScottPlot.DataStructures
                 return;
             }
 
-            lowestValueT = MaxValue();
-            highestValueT = MinValue();
+            lowestValueT = T.MaxValue;
+            highestValueT = T.MinValue;
             if (l == r)
             {
                 lowestValue = highestValue = Convert.ToDouble(sourceArray[l]);
@@ -282,13 +252,13 @@ namespace ScottPlot.DataStructures
             // first iteration on source array that virtualy bottom of tree
             if ((l & 1) == 1) // l is right child
             {
-                lowestValueT = MinExp(lowestValueT, sourceArray[l]);
-                highestValueT = MaxExp(highestValueT, sourceArray[l]);
+                lowestValueT = T.Min(lowestValueT, sourceArray[l]);
+                highestValueT = T.Max(highestValueT, sourceArray[l]);
             }
             if ((r & 1) != 1) // r is left child
             {
-                lowestValueT = MinExp(lowestValueT, sourceArray[r]);
-                highestValueT = MaxExp(highestValueT, sourceArray[r]);
+                lowestValueT = T.Min(lowestValueT, sourceArray[r]);
+                highestValueT = T.Max(highestValueT, sourceArray[r]);
             }
             // go up from array to bottom of Tree
             l = (l + n + 1) / 2;
@@ -298,13 +268,13 @@ namespace ScottPlot.DataStructures
             {
                 if ((l & 1) == 1) // l is right child
                 {
-                    lowestValueT = MinExp(lowestValueT, TreeMin[l]);
-                    highestValueT = MaxExp(highestValueT, TreeMax[l]);
+                    lowestValueT = T.Min(lowestValueT, TreeMin[l]);
+                    highestValueT = T.Max(highestValueT, TreeMax[l]);
                 }
                 if ((r & 1) != 1) // r is left child
                 {
-                    lowestValueT = MinExp(lowestValueT, TreeMin[r]);
-                    highestValueT = MaxExp(highestValueT, TreeMax[r]);
+                    lowestValueT = T.Min(lowestValueT, TreeMin[r]);
+                    highestValueT = T.Max(highestValueT, TreeMax[r]);
                 }
                 // go up one level
                 l = (l + 1) / 2;

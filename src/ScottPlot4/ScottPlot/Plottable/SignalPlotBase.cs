@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
-using System.Linq.Expressions;
+using System.Numerics;
 
 namespace ScottPlot.Plottable
 {
-    public abstract class SignalPlotBase<T> : IPlottable, IHasLine, IHasMarker, IHighlightable, IHasColor, IHasPointsGenericX<double, T> where T : struct, IComparable
+    public abstract class SignalPlotBase<T> : IPlottable, IHasLine, IHasMarker, IHighlightable, IHasColor, IHasPointsGenericX<double, T>
+        where T : INumber<T>, IMinMaxValue<T>
     {
         protected IMinMaxSearchStrategy<T> Strategy = new SegmentedTreeMinMaxSearchStrategy<T>();
         protected bool MaxRenderIndexLowerYSPromise = false;
@@ -237,29 +238,6 @@ namespace ScottPlot.Plottable
         }
 
         /// <summary>
-        /// This expression adds two parameters of the generic type used by this signal plot.
-        /// </summary>
-        private readonly Func<T, T, T> AddYsGenericExpression;
-
-        /// <summary>
-        /// Add two Y values (of the generic type used by this signal plot) and return the result as a double
-        /// </summary>
-        private double AddYs(T y1, T y2) => Convert.ToDouble(AddYsGenericExpression(y1, y2));
-
-        /// <summary>
-        /// Add two Y values (of the generic type used by this signal plot) and return the result as a the same type
-        /// </summary>
-        private T AddYsGeneric(T y1, T y2) => AddYsGenericExpression(y1, y2);
-
-        public SignalPlotBase()
-        {
-            ParameterExpression paramA = Expression.Parameter(typeof(T), "a");
-            ParameterExpression paramB = Expression.Parameter(typeof(T), "b");
-            BinaryExpression bodyAdd = Expression.Add(paramA, paramB);
-            AddYsGenericExpression = Expression.Lambda<Func<T, T, T>>(bodyAdd, paramA, paramB).Compile();
-        }
-
-        /// <summary>
         /// Replace a single Y value
         /// </summary>
         /// <param name="index">array index to replace</param>
@@ -340,7 +318,7 @@ namespace ScottPlot.Plottable
 
             for (int i = visibleIndex1; i <= visibleIndex2 + 1; i++)
             {
-                double yCoordinateWithOffset = AddYs(Ys[i], OffsetY);
+                double yCoordinateWithOffset = Convert.ToDouble(Ys[i] + OffsetY);
                 float yPixel = dims.GetPixelY(yCoordinateWithOffset);
                 float xPixel = dims.GetPixelX(_SamplePeriod * i + OffsetX);
                 PointF linePoint = new(xPixel, yPixel);
@@ -677,7 +655,7 @@ namespace ScottPlot.Plottable
                 .Select(x => x.levelsValues
                               .Select(y => new PointF(
                                     x: x.xPx + dims.DataOffsetX,
-                                    y: dims.GetPixelY(AddYs(y, OffsetY))))
+                                    y: dims.GetPixelY(Convert.ToDouble(y + OffsetY))))
                               .ToArray())
                 .ToList();
 
@@ -824,7 +802,7 @@ namespace ScottPlot.Plottable
             int index = (int)((x - OffsetX) / SamplePeriod);
             index = Math.Max(index, MinRenderIndex);
             index = Math.Min(index, MaxRenderIndex);
-            return (OffsetX + index * SamplePeriod, AddYsGeneric(Ys[index], OffsetY), index);
+            return (OffsetX + index * SamplePeriod, Ys[index] + OffsetY, index);
         }
 
         /// <summary>
